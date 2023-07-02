@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sensor-clotho
+  namespace: sensor-clotho
+  labels:
+    app: sensor-clotho
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sensor-clotho
+  template:
+    metadata:
+      labels:
+        app: sensor-clotho
+    spec:
+      imagePullSecrets:
+      - name: xamcost-ghcr-registry
+      containers:
+      - name: sensor-clotho
+        image: ghcr.io/xamcost/sensor-clotho:latest
+        imagePullPolicy: Always
+        env:
+        - name: BROKER_HOST
+          value: ${MQTT_BROKER_HOST}
+        - name: BROKER_PORT
+          value: "${MQTT_BROKER_PORT}"
+        - name: BROKER_TOPIC
+          value: ${SENSOR_CLOTHO_SHTC3_TOPIC}
+        envFrom:
+        - secretRef:
+            name: sensor-clotho-secret
+            optional: false
+        volumeMounts:
+        - name: sensor-clotho-log-data
+          mountPath: /logs
+        stdin: true
+        tty: true
+        resources:
+          limits:
+            smarter-devices/i2c-1: 1
+          requests:
+            smarter-devices/i2c-1: 1
+      volumes:
+        - name: sensor-clotho-log-data
+          persistentVolumeClaim:
+            claimName: sensor-clotho-log-data  
+      nodeSelector:
+        kubernetes.io/hostname: ${SENSOR_CLOTHO_NODE}
+      restartPolicy: Always
+---
